@@ -310,6 +310,7 @@
                 "allowRedirects": true,
                 "rawBodyContent": "{{2.data}}",
                 "stopOnHttpError": true,
+                "timeout": 300,
                 "contentTypeValue": "application/octet-stream",
                 "requestCompressedContent": true
             },
