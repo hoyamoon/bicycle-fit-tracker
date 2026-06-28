@@ -10,6 +10,9 @@
 #                             so the worker is not killed mid-request
 #                             (a killed worker is seen by the client as a
 #                             503 "Service Unavailable" / ConnectionError).
+#   --clear-base-image      : the service was previously built from a buildpack
+#                             base image; this clears that so it can be built
+#                             from the Dockerfile in this directory instead.
 #
 # Usage (run from this directory):
 #   ./deploy.sh
@@ -38,7 +41,8 @@ gcloud run deploy "${SERVICE}" \
   --cpu 1 \
   --timeout 300 \
   --concurrency 10 \
-  --max-instances 3
+  --max-instances 3 \
+  --clear-base-image
 
 echo "Done. Service URL:"
 gcloud run services describe "${SERVICE}" \
