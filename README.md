@@ -58,5 +58,32 @@ gcloud config set project <PROJECT_ID>   # 최초 1회
 - **해결:** 위 `./deploy.sh` 로 재배포(권한·메모리·타임아웃 플래그 적용) 후 시나리오 재실행.
 - Make HTTP 모듈에는 콜드스타트 대비로 `timeout: 300` 을 추가했다 (`make/make_bicycle_blueprint.json`). UI 에서도 HTTP 모듈 > Timeout = 300 으로 맞춰 두면 동일하다.
 
+### Cloud Run 응답 형식 (Make 시나리오와의 계약)
+
+`main.py` 가 돌려주는 JSON 구조는 Make 시나리오가 그대로 읽으므로 **키 이름/구조를 바꾸면 자동화가 깨진다.**
+
+```json
+{
+  "data": {
+    "datetime_kst": "YYYY-MM-DDTHH:MM:SS+09:00",
+    "distance_km": 0,
+    "calories": 0,
+    "total_ascent": 0,
+    "total_descent": 0,
+    "tss": 0,
+    "avg_speed_kmh": 0,
+    "avg_cadence": 0,
+    "normalized_power": 0,
+    "intensity_factor": 0,
+    "difficulty": "",
+    "farthest_point": { "latitude": 0, "longitude": 0, "distance_from_start_km": 0 }
+  },
+  "raw_session": { "total_elapsed_time": 0, "total_timer_time": 0 }
+}
+```
+
+- Make: `3.data` → `4`(Parse JSON) → `37`(Aggregator: `data`, `raw_session`) → `39`(SetVariables) → 카카오 지역코드 → Notion.
+- `farthest_point.latitude/longitude` 가 비면 카카오 좌표→지역 변환이 `400 Bad Request` 로 실패한다.
+
 ##  
 - 2026.06.22: AWS Lambda  Google Cloud Run  
