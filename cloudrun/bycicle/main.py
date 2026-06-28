@@ -48,7 +48,9 @@ def calculate_difficulty(tss):
 
 
 def parse_fit_file(fit_data):
-    fitfile = FitFile(BytesIO(fit_data))
+    # check_crc=False makes parsing tolerant of minor CRC mismatches in files
+    # exported by some head units, and avoids an unnecessary full-file checksum pass.
+    fitfile = FitFile(BytesIO(fit_data), check_crc=False)
     result = {"session": {}, "farthest_point": {}, "calculated": {}}
 
     for record in fitfile.get_messages('session'):
@@ -135,12 +137,26 @@ def hello_http(request):
         return ('', 204, headers)
 
     headers = {'Access-Control-Allow-Origin': '*'}
+
+    # Health check / manual probe: GET and HEAD return 200 instead of trying to
+    # parse a (non-existent) body, so uptime checks don't look like failures.
+    if request.method in ('GET', 'HEAD'):
+        return (json.dumps({"status": "ok"}), 200,
+                {**headers, 'Content-Type': 'application/json'})
+
     try:
         fit_data = request.get_data()
         if not fit_data:
-            return (json.dumps({"error": "No data received"}), 400, headers)
+            return (json.dumps({"error": "No data received"}), 400,
+                    {**headers, 'Content-Type': 'application/json'})
         result = parse_fit_file(fit_data)
         return (json.dumps(result, default=str, ensure_ascii=False), 200,
                 {**headers, 'Content-Type': 'application/json'})
     except Exception as e:
-        return (json.dumps({"error": str(e)}), 500, headers)
+        # Log to stderr so the failure is visible in Cloud Run logs, then return
+        # a 500 with the message (instead of letting the worker crash, which the
+        # client sees as a 503 "Service Unavailable").
+        import traceback
+        traceback.print_exc()
+        return (json.dumps({"error": str(e)}), 500,
+                {**headers, 'Content-Type': 'application/json'})
